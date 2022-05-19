@@ -36,8 +36,6 @@ public class btindex {
         // Extracting page size from the heap file name
         int pageSize = Integer.parseInt(args[2].substring(5));
         int recordsOnPg = pageSize / recordsSpace;    
-        //Staring the timer
-        long beginTime = System.currentTimeMillis();
 
         try {
             // Loop to iterate through every record present ont he file (allRecords)
@@ -68,19 +66,12 @@ public class btindex {
                     }
                     
                     // Extracting the birthDate as an integer
-                    int bdateInteger = ByteBuffer.wrap(birthDate).getInt();                    
-
-                        // Seeing if date falls within the given parameters
-                        if (bdateInteger <= Integer.parseInt(args[1]) && bdateInteger >= Integer.parseInt(args[0])) {
-
-                            // For each value in each field of the record
-                            int recordPos = 0;
-                            for (int fieldValue = 0; fieldValue < 11; fieldValue++) {
-                                recordPos += NamesArr[fieldValue];
-                            }
-                            System.out.println();
-                        }          
-                    
+                    int bdateInteger = ByteBuffer.wrap(birthDate).getInt();                                       // For each value in each field of the record
+                    int recordPos = 0;
+                    for (int fieldValue = 0; fieldValue < 11; fieldValue++) {
+                        recordPos += NamesArr[fieldValue];
+                        }
+                    System.out.println();         
                     recordNo++;
                 }
                 endOfPg += pageSize;

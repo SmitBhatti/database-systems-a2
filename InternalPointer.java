@@ -1,16 +1,16 @@
 public class InternalPointer {
    
-    private int date;
+    private Integer date;
     private InternalNode upperInternal;
     private InternalNode lowerInternal;
     private LeafNode upperLeaf;
     private LeafNode lowerLeaf;
 
-    public InternalPointer(int date) {
+    public InternalPointer(Integer date) {
         this.date = date;
     }
 
-    public int getDate()
+    public Integer getDate()
     {
         return date;
     }

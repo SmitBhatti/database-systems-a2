@@ -30,7 +30,7 @@ public class InternalPointer {
         return lowerInternal;
     }
 
-    public void setlowerInternal(InternalNode node)
+    public void setLowerInternal(InternalNode node)
     {
         this.upperInternal = node;
     }

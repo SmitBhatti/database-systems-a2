@@ -2,10 +2,10 @@ import java.util.ArrayList;
 
 public class InternalNode {
 
-    private ArrayList<InternalPointer> InternalNodes = new ArrayList<>();
+    private ArrayList<InternalPointer> InternalPointers = new ArrayList<>();
 
-    public ArrayList<InternalPointer> getInternalNodes()
+    public ArrayList<InternalPointer> getInternalPointers()
     {
-        return InternalNodes;
+        return InternalPointers;
     }
 }

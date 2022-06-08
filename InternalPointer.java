@@ -1,57 +1,48 @@
 public class InternalPointer {
    
     private Integer date;
-    private InternalNode upperInternal;
-    private InternalNode lowerInternal;
-    private LeafNode upperLeaf;
-    private LeafNode lowerLeaf;
+    private InternalNode rightInternal;
+    private InternalNode leftInternal;
+    private LeafNode rightLeaf;
+    private LeafNode leftLeaf;
 
     public InternalPointer(Integer date) {
         this.date = date;
     }
 
-    public Integer getDate()
-    {
+    public Integer getDate() {
         return date;
     }
     
-    public InternalNode getUpperInternal()
-    {
-        return upperInternal;
+    public InternalNode getLeftInternal() {
+        return leftInternal;
     }
 
-    public void setUpperInternal(InternalNode node)
-    {
-        this.upperInternal = node;
+    public void setRightInternal(InternalNode node) {
+        this.rightInternal = node;
     }
 
-    public InternalNode getLowerInternal()
-    {
-        return lowerInternal;
+    public InternalNode getRightInternal() {
+        return rightInternal;
     }
 
-    public void setLowerInternal(InternalNode node)
-    {
-        this.upperInternal = node;
+    public void setLeftInternal(InternalNode node) {
+        this.leftInternal = node;
     }
 
-    public LeafNode getUpperLeaf()
-    {
-        return upperLeaf;
+    public LeafNode getRightLeaf() {
+        return rightLeaf;
     }
 
-    public void setUpperLeaf(LeafNode node)
-    {
-        this.upperLeaf = node;
+    public void setRightLeaf(LeafNode node) {
+        this.rightLeaf = node;
     }
 
-    public LeafNode getLowerLeaf()
-    {
-        return lowerLeaf;
+    public LeafNode getLeftLeaf() {
+        return leftLeaf;
     }
 
-    public void setLowerLeaf(LeafNode node)
-    {
-        this.upperLeaf = node;
+    public void setLeftLeaf(LeafNode node) {
+        this.leftLeaf = node;
     }
 }

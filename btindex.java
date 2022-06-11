@@ -8,7 +8,7 @@ import java.util.Scanner;
 public class btindex {
     static misc helper = new misc();
     static ArrayList<Integer> InternalNodeDates = new ArrayList<>();
-    static int[] finalColumnSize = new int[11]; 
+    static int[] finalColumnSize = misc.allocateSizes(); 
     static Integer TreeLevel; //Height of tree tracker
     static LeafNode initialNode; //The first node
     static final Integer FANOUT = 138; //Fanout which is hrdcoded and must be >=126
@@ -25,18 +25,6 @@ public class btindex {
         initialNode = new LeafNode();
         highNode = new InternalNode();
 
-        finalColumnSize[0]  = 65;   //RDFSchema
-        finalColumnSize[1]  = 4;    //Birth Date
-        finalColumnSize[2]  = 160;  //Birth Place
-        finalColumnSize[3]  = 4;    //Death Date
-        finalColumnSize[4]  = 229;  //Field
-        finalColumnSize[5]  = 748;  //Genre
-        finalColumnSize[6]  = 1886; //Instrument 
-        finalColumnSize[7]  = 421;  //Nationality
-        finalColumnSize[8]  = 206;  //Thumbnail
-        finalColumnSize[9]  = 4;    //WikiPage ID
-        finalColumnSize[10] = 468;  //Description
-
         long beginTime = System.currentTimeMillis(); //System timer begins
 
         File heapFile = new File(args[2]);
@@ -48,8 +36,10 @@ public class btindex {
                 //Record storing in this two-dimensional array
                 byte[][] byteRecords = new byte[OnPageRecords][sizeOfRecords];
 
-                for (int i = 0; i < OnPageRecords; i++) {
+                int i = 0;
+                while(i < OnPageRecords) {
                     byteRecords[i] = helper.byteFR(sizeOfRecords, byteCount + (i * sizeOfRecords), heapFile);
+                    i++;
                 }
 
                 int currRecord = 0;
@@ -71,16 +61,7 @@ public class btindex {
         }
         long endTime = System.currentTimeMillis();
         misc.stats(endTime, beginTime, InsertionDate, TreeLevel);
-
-        Scanner sc = new Scanner(System.in);
-        System.out.println("\nEnter the dates you want to search for: (start date) (end date)");
-        String userInput = sc.nextLine(); //Command Line Interface for searching the records from dates int he same heap file
-        sc.close();
-
-        beginTime = System.currentTimeMillis();
-        search.beginSearch(userInput, args[2], highNode, finalColumnSize);
-        endTime = System.currentTimeMillis();
-        misc.stats(endTime, beginTime);
+        misc.searchAndDisplay(misc.takeUserInput(), args, highNode, finalColumnSize);
     }
 
     public static void DivideTopNode(InternalPointer p) {
@@ -148,40 +129,37 @@ public class btindex {
 
     public static InternalPointer keepAddingPointer(LeafPointer pointer, InternalNode node) {
 
-        boolean pointerInserted = false;
-
-        for (int i = 0; i < node.getInternalPointers().size(); i++) {
+        boolean isPointerInserted = false;
+        ArrayList<InternalPointer> nodeIPs = node.getInternalPointers();
+        for (int i = 0; i < nodeIPs.size(); i++) {
             InternalPointer internalPointer = null;
 
-                if (node.getInternalPointers().get(i).getDate() > pointer.getDate()) {
-
-                    pointerInserted = true;
-                    
-                    if (node.getInternalPointers().get(i).getLeftLeaf() != null) {
-                        internalPointer = leafInsertion(node.getInternalPointers().get(i).getLeftLeaf(), pointer);
+            if (nodeIPs.get(i).getDate() > pointer.getDate()) {
+                isPointerInserted = true;                
+                if (nodeIPs.get(i).getLeftLeaf() == null)
+                    internalPointer = keepAddingPointer(pointer, nodeIPs.get(i).getLeftInternal()); 
+                else
+                    internalPointer = leafInsertion(nodeIPs.get(i).getLeftLeaf(), pointer);
+            } 
+            else if (i == nodeIPs.size() - 1) {
+                    isPointerInserted = true;
+                    if (nodeIPs.get(i).getLeftLeaf() != null) {
+                        internalPointer = leafInsertion(nodeIPs.get(i).getRightLeaf(), pointer);
                     } else {
-                        internalPointer = keepAddingPointer(pointer, node.getInternalPointers().get(i).getLeftInternal());
-                    }
-                } else if (i == node.getInternalPointers().size() - 1) {
-
-                    pointerInserted = true;
-                    if (node.getInternalPointers().get(i).getLeftLeaf() != null) {
-                        internalPointer = leafInsertion(node.getInternalPointers().get(i).getRightLeaf(), pointer);
-                    } else {
-                        internalPointer = keepAddingPointer(pointer, node.getInternalPointers().get(i).getRightInternal());
+                        internalPointer = keepAddingPointer(pointer, nodeIPs.get(i).getRightInternal());
                     }
                 }
             if (internalPointer != null) {
 
-                    node.getInternalPointers().add(internalPointer);
-                    node.getInternalPointers().sort((o1, o2) -> o1.getDate().compareTo(o2.getDate()));
+                    nodeIPs.add(internalPointer);
+                    nodeIPs.sort((o1, o2) -> o1.getDate().compareTo(o2.getDate()));
 
-                    int index = node.getInternalPointers().indexOf(internalPointer);
+                    int index = nodeIPs.indexOf(internalPointer);
                     if (index == 0) {
 
-                        if (node.getInternalPointers().get(index + 1).getLeftLeaf() != null) {
+                        if (nodeIPs.get(index + 1).getLeftLeaf() != null) {
                             LeafNode leafNode = new LeafNode();
-                            for (Iterator<LeafPointer> iterator = node.getInternalPointers().get(index+1).getLeftLeaf().getLeafPointers().iterator(); iterator.hasNext(); ) {
+                            for (Iterator<LeafPointer> iterator = nodeIPs.get(index+1).getLeftLeaf().getLeafPointers().iterator(); iterator.hasNext(); ) {
                                 LeafPointer value = iterator.next();
                                 if (value.getDate() < internalPointer.getDate()) {
                                     leafNode.getLeafPointers().add(value);
@@ -189,16 +167,16 @@ public class btindex {
                                 }
                             }
 
-                            leafNode.setNextLeaf(node.getInternalPointers().get(index+1).getLeftLeaf());
+                            leafNode.setNextLeaf(nodeIPs.get(index+1).getLeftLeaf());
 
-                            node.getInternalPointers().get(index).setLeftLeaf(leafNode);
-                            node.getInternalPointers().get(index).setRightLeaf(node.getInternalPointers().get(index+1).getLeftLeaf());
+                            nodeIPs.get(index).setLeftLeaf(leafNode);
+                            nodeIPs.get(index).setRightLeaf(nodeIPs.get(index+1).getLeftLeaf());
 
                         } else {
 
                             InternalNode parentNode = new InternalNode();
 
-                            for (Iterator<InternalPointer> iterator = node.getInternalPointers().get(index+1).getLeftInternal().getInternalPointers().iterator(); iterator.hasNext(); ) {
+                            for (Iterator<InternalPointer> iterator = nodeIPs.get(index+1).getLeftInternal().getInternalPointers().iterator(); iterator.hasNext(); ) {
                                 InternalPointer value = iterator.next();
                                 if (value.getDate() < internalPointer.getDate()) {
                                     parentNode.getInternalPointers().add(value);
@@ -206,17 +184,17 @@ public class btindex {
                                 }
                             }
 
-                            node.getInternalPointers().get(index).setLeftInternal(parentNode);
-                            node.getInternalPointers().get(index).setRightInternal(node.getInternalPointers().get(index+1).getLeftInternal());
+                            nodeIPs.get(index).setLeftInternal(parentNode);
+                            nodeIPs.get(index).setRightInternal(nodeIPs.get(index+1).getLeftInternal());
                             
                         }
 
-                    } else if (index == node.getInternalPointers().size() - 1) {
+                    } else if (index == nodeIPs.size() - 1) {
 
-                        if (node.getInternalPointers().get(index-1).getRightLeaf() != null) {
+                        if (nodeIPs.get(index-1).getRightLeaf() != null) {
 
                             LeafNode leafNode = new LeafNode();
-                            for (Iterator<LeafPointer> iterator = node.getInternalPointers().get(index-1).getRightLeaf().getLeafPointers().iterator(); iterator.hasNext(); ) {
+                            for (Iterator<LeafPointer> iterator = nodeIPs.get(index-1).getRightLeaf().getLeafPointers().iterator(); iterator.hasNext(); ) {
                                 LeafPointer value = iterator.next();
                                 if (value.getDate() >= internalPointer.getDate()) {
                                     leafNode.getLeafPointers().add(value);
@@ -224,65 +202,65 @@ public class btindex {
                                 }
                             }
 
-                            node.getInternalPointers().get(index-1).getRightLeaf().setNextLeaf(leafNode);
+                            nodeIPs.get(index-1).getRightLeaf().setNextLeaf(leafNode);
 
-                            node.getInternalPointers().get(index).setRightLeaf(leafNode);
-                            node.getInternalPointers().get(index).setLeftLeaf(node.getInternalPointers().get(index-1).getRightLeaf());
+                            nodeIPs.get(index).setRightLeaf(leafNode);
+                            nodeIPs.get(index).setLeftLeaf(nodeIPs.get(index-1).getRightLeaf());
 
                         } else {
 
                             InternalNode parentNode = new InternalNode();
-                            for (Iterator<InternalPointer> iterator = node.getInternalPointers().get(index-1).getRightInternal().getInternalPointers().iterator(); iterator.hasNext(); ) {
+                            for (Iterator<InternalPointer> iterator = nodeIPs.get(index-1).getRightInternal().getInternalPointers().iterator(); iterator.hasNext(); ) {
                                 InternalPointer value = iterator.next();
                                 if (value.getDate() > internalPointer.getDate()) {
                                     parentNode.getInternalPointers().add(value);
                                     iterator.remove();
                                 }
                             }
-                            node.getInternalPointers().get(index).setRightInternal(parentNode);
-                            node.getInternalPointers().get(index).setLeftInternal(node.getInternalPointers().get(index-1).getRightInternal());
+                            nodeIPs.get(index).setRightInternal(parentNode);
+                            nodeIPs.get(index).setLeftInternal(nodeIPs.get(index-1).getRightInternal());
                         }
                     } else {
-                        if (node.getInternalPointers().get(index-1).getRightLeaf() != null) {
+                        if (nodeIPs.get(index-1).getRightLeaf() != null) {
                             LeafNode leafNode = new LeafNode();
-                            for (Iterator<LeafPointer> iterator = node.getInternalPointers().get(index-1).getRightLeaf().getLeafPointers().iterator(); iterator.hasNext(); ) {
+                            for (Iterator<LeafPointer> iterator = nodeIPs.get(index-1).getRightLeaf().getLeafPointers().iterator(); iterator.hasNext(); ) {
                                 LeafPointer value = iterator.next();
                                 if (value.getDate() >= internalPointer.getDate()) {
                                     leafNode.getLeafPointers().add(value);
                                     iterator.remove();
                                 }
                             }  
-                            node.getInternalPointers().get(index+1).setLeftLeaf(leafNode);
-                            node.getInternalPointers().get(index).setRightLeaf(leafNode);
-                            node.getInternalPointers().get(index).setLeftLeaf(node.getInternalPointers().get(index-1).getRightLeaf());
+                            nodeIPs.get(index+1).setLeftLeaf(leafNode);
+                            nodeIPs.get(index).setRightLeaf(leafNode);
+                            nodeIPs.get(index).setLeftLeaf(nodeIPs.get(index-1).getRightLeaf());
 
-                            node.getInternalPointers().get(index).getLeftLeaf().setNextLeaf(node.getInternalPointers().get(index).getRightLeaf());
-                            node.getInternalPointers().get(index).getRightLeaf().setNextLeaf(node.getInternalPointers().get(index+1).getRightLeaf());
+                            nodeIPs.get(index).getLeftLeaf().setNextLeaf(nodeIPs.get(index).getRightLeaf());
+                            nodeIPs.get(index).getRightLeaf().setNextLeaf(nodeIPs.get(index+1).getRightLeaf());
 
 
                         } else {
                             InternalNode internalNode = new InternalNode();
-                            for (Iterator<InternalPointer> iterator = node.getInternalPointers().get(index-1).getRightInternal().getInternalPointers().iterator(); iterator.hasNext(); ) {
+                            for (Iterator<InternalPointer> iterator = nodeIPs.get(index-1).getRightInternal().getInternalPointers().iterator(); iterator.hasNext(); ) {
                                 InternalPointer value = iterator.next();
                                 if (value.getDate() < internalPointer.getDate()) {
                                     internalNode.getInternalPointers().add(value);
                                     iterator.remove();
                                 }
                             }
-                            node.getInternalPointers().get(index-1).setRightInternal(internalNode);
-                            node.getInternalPointers().get(index).setLeftInternal(internalNode);
-                            node.getInternalPointers().get(index).setRightInternal(node.getInternalPointers().get(index+1).getLeftInternal());
+                            nodeIPs.get(index-1).setRightInternal(internalNode);
+                            nodeIPs.get(index).setLeftInternal(internalNode);
+                            nodeIPs.get(index).setRightInternal(nodeIPs.get(index+1).getLeftInternal());
                         }
                     }
-                    if (node.getInternalPointers().size() >= FANOUT) {                        
+                    if (nodeIPs.size() >= FANOUT) {                        
                         Integer centreIndex = FANOUT/2;
-                        InternalPointer centrePointer = new InternalPointer(node.getInternalPointers().get(centreIndex).getDate());
+                        InternalPointer centrePointer = new InternalPointer(nodeIPs.get(centreIndex).getDate());
 
-                        if (node.getInternalPointers().get(index).getRightInternal() != null) {
+                        if (nodeIPs.get(index).getRightInternal() != null) {
 
-                                for (Iterator<InternalPointer> iterator = node.getInternalPointers().get(index).getRightInternal().getInternalPointers().iterator(); iterator.hasNext(); ) {
+                                for (Iterator<InternalPointer> iterator = nodeIPs.get(index).getRightInternal().getInternalPointers().iterator(); iterator.hasNext(); ) {
                                     InternalPointer value = iterator.next();
-                                    if (value.getDate() == node.getInternalPointers().get(index).getDate()) {
+                                    if (value.getDate() == nodeIPs.get(index).getDate()) {
                                         iterator.remove();
                                     }
                                 }
@@ -292,16 +270,12 @@ public class btindex {
                             return null;
                         }
                         return centrePointer;
-                    } else {
+                    } 
+                    else
                         return null;
-                    }
             }
-
-            // If the pointer has already been inseted,
-            // retrun and do not continue.
-            if (pointerInserted == true) {
-                return null;
-            }
+            if (isPointerInserted)
+                return null; //No point in continuing if there already is a pointer inserted.
         }
         return null;
     }
